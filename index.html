@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerador de Quiz — Uma Pergunta por Vez</title>
+
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background:#f8f8fc; }
+        .container { max-width: 700px; margin: auto; background:white; padding:20px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); }
+
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 4px; font-weight:bold; }
+        .form-group input { width: 100%; padding: 8px; border-radius:6px; border:1px solid #ccc; }
+
+        .question-preview {
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background: #f7f7f7;
+        }
+
+        button {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            background: #4f46e5;
+            color: white;
+            margin-top: 10px;
+        }
+
+        button:hover { opacity: .9; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <h1>Gerador de Quiz — Uma Pergunta por Vez</h1>
+
+    <form id="questionForm">
+
+        <div class="form-group">
+            <label>Enunciado:</label>
+            <input type="text" id="enunciado">
+        </div>
+
+        <div class="form-group">
+            <label>Imagem (URL):</label>
+            <input type="text" id="imageUrl">
+        </div>
+
+        <div class="form-group">
+            <label>Pergunta:</label>
+            <input type="text" id="pergunta">
+        </div>
+
+        <div class="form-group">
+            <label>Alternativa 1:</label>
+            <input type="text" id="opt1">
+        </div>
+
+        <div class="form-group">
+            <label>Alternativa 2:</label>
+            <input type="text" id="opt2">
+        </div>
+
+        <div class="form-group">
+            <label>Alternativa 3:</label>
+            <input type="text" id="opt3">
+        </div>
+
+        <div class="form-group">
+            <label>Alternativa 4:</label>
+            <input type="text" id="opt4">
+        </div>
+
+        <div class="form-group">
+            <label>Resposta Correta:</label>
+            <select id="correct">
+                <option value="0">Alternativa 1</option>
+                <option value="1">Alternativa 2</option>
+                <option value="2">Alternativa 3</option>
+                <option value="3">Alternativa 4</option>
+            </select>
+        </div>
+
+        <button type="button" onclick="addQuestion()">Adicionar Pergunta</button>
+    </form>
+
+    <h2>Perguntas Adicionadas:</h2>
+    <div id="questionsList"></div>
+
+    <button onclick="downloadQuiz()">Baixar Quiz Completo</button>
+
+</div>
+
+
+<script>
+    let questions = [];
+
+    function addQuestion() {
+        const q = {
+            enunciado: document.getElementById("enunciado").value.trim(),
+            image: document.getElementById("imageUrl").value.trim(),
+            question: document.getElementById("pergunta").value.trim(),
+            choices: [
+                document.getElementById("opt1").value.trim(),
+                document.getElementById("opt2").value.trim(),
+                document.getElementById("opt3").value.trim(),
+                document.getElementById("opt4").value.trim()
+            ],
+            answer: Number(document.getElementById("correct").value)
+        };
+
+        if (!q.enunciado || !q.question || q.choices.includes("")) {
+            alert("Preencha todos os campos!");
+            return;
+        }
+
+        questions.push(q);
+        renderPreview();
+        document.getElementById("questionForm").reset();
+    }
+
+    function renderPreview() {
+        const div = document.getElementById("questionsList");
+        div.innerHTML = "";
+
+        questions.forEach((q, index) => {
+            div.innerHTML += `
+                <div class="question-preview">
+                    <strong>${index+1}. ${q.enunciado}</strong><br>
+                    <em>${q.question}</em>
+                </div>
+            `;
+        });
+    }
+
+    function downloadQuiz() {
+        if (questions.length === 0) {
+            alert("Adicione pelo menos uma pergunta!");
+            return;
+        }
+
+        const quizHTML = buildQuizHTML();
+
+        const blob = new Blob([quizHTML], { type: "text/html" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "quiz-uma-pergunta-por-vez.html";
+        a.click();
+
+        URL.revokeObjectURL(url);
+    }
+
+    function buildQuizHTML() {
+        return `
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quiz</title>
+
+  <style>
+      :root{ --bg:#f7f7fb; --card:#ffffff; --accent:#4f46e5; --ok:#16a34a; --bad:#dc2626; --muted:#6b7280; }
+      body{font-family:Arial, sans-serif; background:var(--bg); padding:20px; display:flex; justify-content:center;}
+      .card{max-width:760px; background:white; padding:25px; border-radius:12px; box-shadow:0 4px 14px rgba(0,0,0,0.1);}
+      .progress{height:10px; background:#e0e7ff; margin-bottom:20px; border-radius:5px; overflow:hidden;}
+      .progress i{display:block; height:100%; background:var(--accent); width:0%}
+      .question{font-size:18px; margin-bottom:10px}
+      img{max-width:100%; border-radius:8px; margin:10px 0}
+      .options{display:grid; gap:10px}
+      .option{padding:12px; border:1px solid #ddd; border-radius:8px; cursor:pointer;}
+      .correct{background:#bbf7d0 !important; border-color:#16a34a !important; color:#064e3b;}
+      .wrong{background:#fecaca !important; border-color:#dc2626 !important; color:#7f1d1d;}
+      .locked{pointer-events:none; opacity:.9;}
+      #controls{margin-top:20px; display:flex; justify-content:space-between;}
+  </style>
+</head>
+<body>
+
+<main class="card">
+
+  <h1>Quiz</h1>
+  <div class="progress"><i id="progressBar"></i></div>
+
+  <section id="quizArea"></section>
+
+  <div id="controls">
+    <button id="prevBtn">Anterior</button>
+    <button id="nextBtn">Próxima</button>
+  </div>
+
+</main>
+
+<script>
+const questions = ${JSON.stringify(questions, null, 2)};
+
+let state = {
+  current: 0,
+  answers: Array(questions.length).fill(null)
+};
+
+const quizArea = document.getElementById("quizArea");
+const progressBar = document.getElementById("progressBar");
+
+function renderQuestion(i){
+  const q = questions[i];
+
+  let html = "<div class='question'><strong>"+q.enunciado+"</strong><br>"+q.question+"</div>";
+
+  if(q.image){
+    html += "<img src='"+q.image+"'>";
+  }
+
+  html += "<div class='options'>";
+
+  q.choices.forEach((c, idx)=>{
+    html += "<div class='option' onclick='selectOption("+i+","+idx+", this)'>"+c+"</div>";
+  });
+
+  html += "</div>";
+
+  quizArea.innerHTML = html;
+
+  progressBar.style.width = ((i)/questions.length)*100 + "%";
+}
+
+function selectOption(qIndex, choiceIndex, el){
+  const options = document.querySelectorAll(".option");
+
+  options.forEach(opt => opt.classList.add("locked"));
+
+  const correct = questions[qIndex].answer;
+
+  options.forEach((opt, idx)=>{
+    if(idx === correct){
+      opt.classList.add("correct");
+    }
+    else if(idx === choiceIndex){
+      opt.classList.add("wrong");
+    }
+  });
+
+  state.answers[qIndex] = choiceIndex;
+}
+
+document.getElementById("nextBtn").onclick = function(){
+  if(state.answers[state.current] === null){
+    alert("Selecione uma resposta!");
+    return;
+  }
+  state.current++;
+
+  if(state.current >= questions.length){
+    finishQuiz();
+  } else {
+    renderQuestion(state.current);
+  }
+};
+
+document.getElementById("prevBtn").onclick = function(){
+  if(state.current > 0){
+    state.current--;
+    renderQuestion(state.current);
+  }
+};
+
+function finishQuiz(){
+  let score = 0;
+  state.answers.forEach((a, i)=>{ if(a === questions[i].answer) score++; });
+
+  quizArea.innerHTML = "<h2>Você acertou "+score+" de "+questions.length+"</h2>";
+  document.getElementById("controls").style.display = "none";
+}
+
+renderQuestion(0);
+<\/script>
+
+</body>
+</html>
+        `;
+    }
+</script>
+
+</body>
+</html>
